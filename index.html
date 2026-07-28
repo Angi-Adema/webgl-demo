@@ -1,18 +1,35 @@
+<!-- HTML document for displaying the Sierpinski Gasket using WebGL -->
+<!-- Define the HTML5 document type and specify the document language -->
 <!DOCTYPE html>
 <html lang="en">
+
+<!-- Define the metadata such as the character set and viewport settings -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Set title for the webpage -->
     <title>Display the Sierpinski Gasket</title>
 </head>
+
+<!-- Define the body containing the WebGL canvas and JavaScript required to render the WebGL -->
 <body>
+    <!-- Create a canvas element for WebGL rendering defining its width and height -->
     <canvas id="glCanvas" width="500" height="500" ></canvas>
 
-    <!-- Initialize the WebGL context and the shaders-->
-    <script src="main.js">
+    <!-- Create a script for the browser to load and execute the WebGL JavaScript code -->
+    <script>
+        // Get the canvas element from the HTML document by its ID
         const canvas = document.getElementById("glCanvas");
+
+        // Initialize the WebGL rendering context from the canvas element
         const gl = canvas.getContext("webgl");
+
+        // Check if the WebGL context was successfully initialized, alert user if it was not
+        if (!gl) {
+            alert("WebGL not supported in this browser.");
+        }
 
     </script>
 </body>
+
 </html>
