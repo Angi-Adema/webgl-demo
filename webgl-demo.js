@@ -1,0 +1,244 @@
+        // Get the canvas element from the HTML document by its ID
+        const canvas = document.getElementById("glCanvas");
+
+        // Initialize the WebGL rendering context from the canvas element
+        const gl = canvas.getContext("webgl");
+
+        // Check if the WebGL context was successfully initialized, alert user if it was not
+        if (!gl) {
+            alert("WebGL not supported in this browser.");
+        }
+
+        // Create a constant variable to store the GLSL shader code written as a JavaScript
+        // template literal.
+        const vertexShaderSource = `
+            attribute vec2 aPosition;     // Attribute containing the two-dimensional (x, y) position of each vertex
+            attribute vec3 aColor;        // Attribute containing the red, green, and blue (RGB) color values for each vertex
+
+            varying vec3 vColor;          // Varying variable used to pass the interpolated color from the vertex shader to the fragment shader
+
+            void main() {                                     // Entry-point of the vertex shader that executes once for each vertex
+                gl_Position = vec4(aPosition, 0.0, 1.0);     // Assign the vertex position using x, y, z, and w coordinates (a_position contains x and y)
+                vColor = aColor;                            // Pass the vertex color to the fragment shader through the varying variable
+            }
+        `;
+
+        // Create the constant variable to store the GLSL fragment shader source code written as a JavaScript 
+        // template literal. 
+        const fragmentShaderSource = `
+            precision mediump float;       // Set the default precision for floating-point values used in the fragment shader
+
+            varying vec3 vColor;          // Receive the interpolated RGB color passed from the vertex shader
+
+            void main() {                              // Entry-point of the fragment shader that executes once for each fragment (potential pixel)
+                gl_FragColor = vec4(vColor, 1.0);     // Set the final RGBA color of the fragment using the interpolated RGB color and a fully opaque alpha value
+            }
+        `;
+
+        // Create a function that creates and compiles either a vertex or fragment shader
+        // from the supplied GLSL source code and returns the compiled shader object
+        function createShader(type, source) {
+            // Create a new shader object of the specified type (vertex or fragment)
+            const shader = gl.createShader(type);
+
+            // Attach the GLSL source code to the shader object
+            gl.shaderSource(shader, source);
+            // Compile the shader source code into executable GPU instructions
+            gl.compileShader(shader);
+
+            // Check if the shader compilation was successful
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                // Display the compiler error message in the browser's developer console
+                console.error("Shader compilation failed: ", gl.getShaderInfoLog(shader));
+                // Delete the shader object to free up GPU resources
+                gl.deleteShader(shader);
+                // Return null to indicate that shader creation failed
+                return null;
+            }
+            // Return the compiled shader object if compilation was successful
+            return shader;
+        }
+
+        // Compile the vertex and fragment shaders
+        const vertexShader = createShader(
+            gl.VERTEX_SHADER,
+            vertexShaderSource
+        );
+
+        const fragmentShader = createShader(
+            gl.FRAGMENT_SHADER,
+            fragmentShaderSource
+        );
+
+        // Create a shader program and connect both shaders
+        const shaderProgram = gl.createProgram();
+
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+
+        // Check for program-linking errors
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            throw new Error(gl.getProgramInfoLog(shaderProgram));
+        }
+
+        // Tell WebGL to use this shader program
+        gl.useProgram(shaderProgram);
+
+        // Arrays that will store vertex position and color attributes
+        const positions = [];
+        const colors = [];
+
+        // Find the midpoint between two vertices
+        function findMidpoint(vertex1, vertex2) {
+            return [
+                (vertex1[0] + vertex2[0]) / 2,
+                (vertex1[1] + vertex2[1]) / 2
+            ];
+        }
+
+        // Add one triangle's positions and colors to the arrays
+        function addTriangle(vertex1, vertex2, vertex3) {
+            positions.push(
+                vertex1[0], vertex1[1],
+                vertex2[0], vertex2[1],
+                vertex3[0], vertex3[1]
+            );
+
+            // Assign red, green, and blue to the three vertices
+            colors.push(
+                1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, 1.0
+            );
+        }
+
+        // Recursively divide a triangle into three smaller triangles
+        function divideTriangle(vertex1, vertex2, vertex3, level) {
+            // When the final level is reached, store the triangle
+            if (level === 0) {
+                addTriangle(vertex1, vertex2, vertex3);
+                return;
+            }
+
+            // Calculate the midpoint of each side
+            const midpoint12 = findMidpoint(vertex1, vertex2);
+            const midpoint23 = findMidpoint(vertex2, vertex3);
+            const midpoint31 = findMidpoint(vertex3, vertex1);
+
+            // Create the three outside triangles
+            // The center triangle is intentionally omitted
+            divideTriangle(
+                vertex1,
+                midpoint12,
+                midpoint31,
+                level - 1
+            );
+
+            divideTriangle(
+                midpoint12,
+                vertex2,
+                midpoint23,
+                level - 1
+            );
+
+            divideTriangle(
+                midpoint31,
+                midpoint23,
+                vertex3,
+                level - 1
+            );
+        }
+
+        // Define the three vertices of the original large triangle
+        const bottomLeft = [-0.9, -0.8];
+        const bottomRight = [0.9, -0.8];
+        const topVertex = [0.0, 0.9];
+
+        // Generate the gasket
+        // A larger number creates more detail
+        const subdivisionLevel = 5;
+
+        divideTriangle(
+            bottomLeft,
+            bottomRight,
+            topVertex,
+            subdivisionLevel
+        );
+
+        // Create a buffer for the vertex positions
+        const positionBuffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(positions),
+            gl.STATIC_DRAW
+        );
+
+        // Locate the position attribute in the vertex shader
+        const positionLocation = gl.getAttribLocation(
+            shaderProgram,
+            "aPosition"
+        );
+
+        // Explain how WebGL should read each position
+        gl.vertexAttribPointer(
+            positionLocation,
+            2,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+
+        gl.enableVertexAttribArray(positionLocation);
+
+        // Create a buffer for the vertex colors
+        const colorBuffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(colors),
+            gl.STATIC_DRAW
+        );
+
+        // Locate the color attribute in the vertex shader
+        const colorLocation = gl.getAttribLocation(
+            shaderProgram,
+            "aColor"
+        );
+
+        // Explain how WebGL should read each color
+        gl.vertexAttribPointer(
+            colorLocation,
+            3,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+
+        gl.enableVertexAttribArray(colorLocation);
+
+        // Set the area of the canvas used for rendering
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        // Set the background color to white
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+        // Clear the canvas
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Draw each group of three vertices as a triangle
+        gl.drawArrays(
+            gl.TRIANGLES,
+            0,
+            positions.length / 2
+        );
+        
+
+        
