@@ -156,6 +156,16 @@
         const bottomRight = [0.9, -0.8];
         const topVertex = [0.0, 0.9];
 
+        // Experimental values exploring the effects
+        // const bottomLeft = [-0.8, -0.8];
+        // const bottomRight = [0.8, -0.8];
+        // const topVertex = [0.0, 0.8];
+
+        // Second experimental set of vertices
+        // const bottomLeft = [-0.4, -0.4];
+        // const bottomRight = [0.4, -0.4];
+        // const topVertex = [0.0, 0.4];
+
         // Generate the Sierpinski Gasket
         // Define the number of triangles generated - a larger number creates a more detailed gasket (sets the level value for recursive subdivision)
         const subdivisionLevel = 5;
