@@ -7,6 +7,7 @@
         // Check if the WebGL context was successfully initialized, alert user if it was not
         if (!gl) {
             alert("WebGL not supported in this browser.");
+            throw new Error("WebGL not supported in this browser.");
         }
 
         // Create a constant variable to store the GLSL shader code written as a JavaScript
@@ -103,7 +104,7 @@
                 vertex3[0], vertex3[1]    // Vertex 3 position
             );
 
-            // Assign red, green, and blue colors to the three vertices
+            // Assign red, green, and blue colors to the three vertices (having all three in each triangle)
             colors.push(
                 1.0, 0.0, 0.0,   // Vertex 1 color red
                 0.0, 1.0, 0.0,   // Vertex 2 color green
