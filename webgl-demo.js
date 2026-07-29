@@ -76,8 +76,10 @@
 
         // Check for program-linking errors and if there is an error, end the program and display message
         if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            console.error("Program linking failed: ", gl.getProgramInfoLog(shaderProgram));
-            return;
+            throw new Error(
+                "Program linking failed: " +
+                gl.getProgramInfoLog(shaderProgram)
+            );
         }
 
         // Use the linked shader program for subsequent WebGL rendering operations
